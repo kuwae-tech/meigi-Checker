@@ -251,6 +251,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 900,
     height: 700,
+    title: "名義SPOT進捗チェッカー",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

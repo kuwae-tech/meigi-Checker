@@ -1,7 +1,7 @@
 {
   "name": "excel-status-summarizer",
   "version": "1.0.0",
-  "description": "Excel Status Summarizer for Mac",
+  "description": "Excelの制作状況を抽出し、名義別の進捗確認を素早く行えるアプリ",
   "main": "src/main.js",
   "author": "",
   "license": "MIT",
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.kuwae.excel-status-summarizer",
-    "productName": "Excel Status Summarizer",
+    "productName": "名義SPOT進捗チェッカー",
     "directories": {
       "output": "dist"
     },
