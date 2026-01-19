@@ -1,25 +1,3 @@
-【コピーボックス（Codexへの指示のみ）】
-
-目的
-- Excel出力の不具合（「日付だけ行」「日付順にならない」「M/D整形されない」「結合セル/空欄で崩れる」）を直す。
-- 競合回避のため、変更は src/main.js の“全文貼り替え”のみ。package-lock.json は絶対に触らない。
-
-対象
-- repo: kuwae-tech/meigi-Checker
-- branch: main
-
-変更ファイル（1つだけ）
-- src/main.js（全文置換）
-
-作業手順
-1) main を最新化してチェックアウト
-2) src/main.js を下記の内容で“完全置換”
-3) package-lock.json / package.json / workflow 等、他ファイルは一切変更しない（git diffで確認）
-4) main にコミットしてpush
-5) Actions(build-mac-dmg) が走り、Artifacts に dmg が出ることを確認
-
-src/main.js（全文）
----ここから---
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const XLSX = require("xlsx");
