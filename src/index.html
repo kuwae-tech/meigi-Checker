@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Excel Status Summarizer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>Excel Status Summarizer（Mac）</h1>
+      <p>Excel をドラッグ＆ドロップして「未制作」「確認中」だけを抽出します。</p>
+    </header>
+
+    <section class="panel">
+      <div id="drop-zone" class="drop-zone">
+        <p>ここに Excel ファイルをドロップ</p>
+        <button id="select-file" type="button">ファイルを選択</button>
+      </div>
+      <p id="file-name" class="file-name">未選択</p>
+      <p id="status-message" class="status-message" data-type="info">ファイルを読み込むと結果が表示されます。</p>
+    </section>
+
+    <section class="panel">
+      <div class="output-header">
+        <h2>出力結果</h2>
+        <button id="copy-button" type="button" disabled>コピー</button>
+      </div>
+      <textarea id="output" readonly placeholder="結果がここに表示されます"></textarea>
+    </section>
+  </main>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
