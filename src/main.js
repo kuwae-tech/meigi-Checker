@@ -1,155 +1,105 @@
-const { app, BrowserWindow, dialog, ipcMain, clipboard } = require('electron');
-const path = require('path');
-const XLSX = require('xlsx');
+【コピーボックス（Codexへの指示のみ）】
 
-const STATUS_PENDING = '未制作';
-const STATUS_CHECKING = '確認中';
-const TARGET_SHEET_NAME = '製作状況';
+目的
+- Excel出力の不具合（「日付だけ行」「日付順にならない」「M/D整形されない」「結合セル/空欄で崩れる」）を直す。
+- 競合回避のため、変更は src/main.js の“全文貼り替え”のみ。package-lock.json は絶対に触らない。
 
-const createWindow = () => {
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 700,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
+対象
+- repo: kuwae-tech/meigi-Checker
+- branch: main
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-};
+変更ファイル（1つだけ）
+- src/main.js（全文置換）
 
-const normalizeCompany = (value) => {
-  return String(value || '')
-    .replace(/株式会社/g, '')
-    .trim();
-};
+作業手順
+1) main を最新化してチェックアウト
+2) src/main.js を下記の内容で“完全置換”
+3) package-lock.json / package.json / workflow 等、他ファイルは一切変更しない（git diffで確認）
+4) main にコミットしてpush
+5) Actions(build-mac-dmg) が走り、Artifacts に dmg が出ることを確認
 
-const formatLine = ({ date, artist, company }) => {
-  const cleanDate = String(date || '').trim();
-  const cleanArtist = String(artist || '').trim();
-  const cleanCompany = normalizeCompany(company);
+src/main.js（全文）
+---ここから---
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const path = require("path");
+const XLSX = require("xlsx");
 
-  if (!cleanDate && !cleanArtist) {
-    return '';
+function normalizeText(v) {
+  let s = String(v ?? "");
+  s = s.replace(/\u3000/g, " ");
+  s = s.replace(/\uFFFD/g, ""); // �
+  s = s.replace(/[\u0000-\u001F\u007F]/g, ""); // control chars
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+function stripKabushiki(company) {
+  const s = normalizeText(company);
+  const cleaned = s.replace(/株式会社/g, "").replace(/^[?・]+/g, "").trim();
+  return normalizeText(cleaned);
+}
+
+function ymdKey(y, m, d) {
+  return y * 10000 + m * 100 + d;
+}
+
+function excelSerialToYMD(n) {
+  const dc = XLSX.SSF.parse_date_code(n);
+  if (!dc || !dc.y || !dc.m || !dc.d) return null;
+  return { y: dc.y, m: dc.m, d: dc.d };
+}
+
+function extractYmdListFromString(text) {
+  const s = String(text ?? "");
+  const re = /(\d{4})\/(\d{1,2})\/(\d{1,2})/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    out.push({ y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) });
+  }
+  return out;
+}
+
+function parseKouenbiCell(raw) {
+  // returns: { ranges:[{y1,m1,d1,y2,m2,d2}], dates:[{y,m,d}] }
+  if (raw instanceof Date && !isNaN(raw.valueOf())) {
+    return {
+      ranges: [],
+      dates: [{ y: raw.getFullYear(), m: raw.getMonth() + 1, d: raw.getDate() }],
+    };
   }
 
-  if (cleanCompany) {
-    return `${cleanDate}：${cleanArtist}（${cleanCompany}）`;
+  if (typeof raw === "number" && isFinite(raw)) {
+    const ymd = excelSerialToYMD(raw);
+    if (ymd) return { ranges: [], dates: [ymd] };
   }
 
-  return `${cleanDate}：${cleanArtist}`;
-};
+  const text = normalizeText(raw);
+  if (!text) return { ranges: [], dates: [] };
 
-const parseWorkbook = (filePath) => {
-  const workbook = XLSX.readFile(filePath, { cellDates: true });
-  const sheetName = workbook.SheetNames.includes(TARGET_SHEET_NAME)
-    ? TARGET_SHEET_NAME
-    : workbook.SheetNames[0];
+  const hasRange = text.includes("〜") || text.includes("～");
+  const list = extractYmdListFromString(text);
 
-  if (!sheetName) {
-    throw new Error('シートが見つかりませんでした。');
+  if (hasRange && list.length >= 2) {
+    const a = list[0];
+    const b = list[1];
+    return { ranges: [{ y1: a.y, m1: a.m, d1: a.d, y2: b.y, m2: b.m, d2: b.d }], dates: [] };
   }
 
-  const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: '',
-    raw: false
-  });
+  return { ranges: [], dates: list.map((x) => ({ y: x.y, m: x.m, d: x.d })) };
+}
 
-  if (rows.length === 0) {
-    throw new Error('シートにデータがありません。');
+function formatDatesToText(dates) {
+  // dates: [{y,m,d}] unique/sorted by ymdKey
+  const byMonth = new Map(); // key: `${y}-${m}` -> Set(days)
+  for (const p of dates) {
+    const k = `${p.y}-${p.m}`;
+    if (!byMonth.has(k)) byMonth.set(k, new Set());
+    byMonth.get(k).add(p.d);
   }
 
-  const headers = rows[0].map((header) => String(header || '').trim());
-  const getIndex = (name) => headers.findIndex((header) => header === name);
-
-  const statusIndex = getIndex('制作状況');
-  const artistIndex = getIndex('アーティスト名');
-  const companyIndex = getIndex('申込社');
-  const dateIndex = getIndex('公演日');
-
-  if ([statusIndex, artistIndex, companyIndex, dateIndex].some((index) => index < 0)) {
-    throw new Error('必要な列（制作状況 / アーティスト名 / 申込社 / 公演日）が見つかりません。');
-  }
-
-  const pending = [];
-  const checking = [];
-
-  rows.slice(1).forEach((row) => {
-    const status = String(row[statusIndex] || '').trim();
-    if (![STATUS_PENDING, STATUS_CHECKING].includes(status)) {
-      return;
-    }
-
-    const line = formatLine({
-      date: row[dateIndex],
-      artist: row[artistIndex],
-      company: row[companyIndex]
-    });
-
-    if (!line) {
-      return;
-    }
-
-    if (status === STATUS_PENDING) {
-      pending.push(line);
-    } else if (status === STATUS_CHECKING) {
-      checking.push(line);
-    }
+  const keys = Array.from(byMonth.keys()).sort((a, b) => {
+    const [ya, ma] = a.split("-").map(Number);
+    const [yb, mb] = b.split("-").map(Number);
+    return ymdKey(ya, ma, 1) - ymdKey(yb, mb, 1);
   });
-
-  const output = [
-    `＜${STATUS_PENDING}＞`,
-    ...pending,
-    '',
-    `＜${STATUS_CHECKING}＞`,
-    ...checking
-  ].join('\n');
-
-  return output.trim();
-};
-
-app.whenReady().then(() => {
-  ipcMain.handle('open-file', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [
-        { name: 'Excel', extensions: ['xlsx', 'xls'] }
-      ]
-    });
-
-    if (result.canceled || result.filePaths.length === 0) {
-      return null;
-    }
-
-    return result.filePaths[0];
-  });
-
-  ipcMain.handle('parse-excel', async (_, filePath) => {
-    if (!filePath) {
-      throw new Error('ファイルパスが指定されていません。');
-    }
-
-    return parseWorkbook(filePath);
-  });
-
-  ipcMain.handle('copy-text', async (_, text) => {
-    clipboard.writeText(String(text || ''));
-    return true;
-  });
-
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
