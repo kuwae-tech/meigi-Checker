@@ -273,14 +273,17 @@ app.whenReady().then(() => {
     return res.filePaths[0];
   });
 
-  ipcMain.handle("process-file", async (_evt, filePath) => {
+  const parseExcelHandler = async (_evt, filePath) => {
     try {
       const text = parseExcelToSummary(filePath);
       return { ok: true, text };
     } catch (e) {
       return { ok: false, error: String(e && e.message ? e.message : e) };
     }
-  });
+  };
+
+  ipcMain.handle("parse-excel", parseExcelHandler);
+  ipcMain.handle("process-file", parseExcelHandler);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
