@@ -133,7 +133,7 @@ function parseExcelToSummary(filePath) {
     return { status, artist, company, kouenRaw };
   });
 
-  const targets = new Set(["未制作", "確認中"]);
+  const targets = new Set(["未制作", "確認中", "制作中"]);
   const map = new Map();
 
   for (const r of normalizedRows) {
@@ -228,7 +228,7 @@ function parseExcelToSummary(filePath) {
     });
   }
 
-  const order = ["未制作", "確認中"];
+  const order = ["未制作", "制作中", "確認中"];
   const sections = [];
 
   for (const st of order) {

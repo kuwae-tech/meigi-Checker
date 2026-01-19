@@ -74,13 +74,13 @@ body {
 .drop-zone {
   border: 2px dashed var(--sage-300);
   border-radius: var(--radius-lg);
-  padding: 22px;
+  padding: 14px;
   text-align: center;
   background: #f9fbf9;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
 }
@@ -98,14 +98,14 @@ body {
 }
 
 .drop-subtitle {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 13px;
   color: var(--text-muted);
 }
 
 .primary-button,
 .ghost-button {
-  padding: 10px 20px;
+  padding: 8px 20px;
   border-radius: var(--radius-pill);
   border: none;
   font-size: 14px;
