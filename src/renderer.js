@@ -49,10 +49,10 @@ const handleFile = async (filePath) => {
     const res = await window.api.parseExcel(filePath);
     const text = resolveResult(res);
     renderOutput(text);
-    setStatus('抽出完了。コピーできます。', 'success');
+    setStatus('抽出しました。コピーできます。', 'success');
   } catch (error) {
     renderOutput('');
-    setStatus(error.message || '読み込みに失敗しました。', 'error');
+    setStatus('読み取れませんでした。ファイルをご確認ください。', 'error');
   }
 };
 
