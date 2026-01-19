@@ -1,0 +1,36 @@
+name: regen-package-lock
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  regen:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Recreate lockfile
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
+
+      - name: Create PR with regenerated lockfile
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: regenerate package-lock.json"
+          title: "chore: regenerate package-lock.json"
+          body: |
+            Regenerated package-lock.json in GitHub Actions (Codex environment cannot access npm registry).
+          branch: chore/regen-lock
+          delete-branch: true
