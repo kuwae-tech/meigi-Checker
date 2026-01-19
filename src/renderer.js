@@ -15,6 +15,21 @@ const renderOutput = (text) => {
   copyButton.disabled = !text;
 };
 
+const resolveResult = (res) => {
+  if (res && typeof res === 'object') {
+    if (!res.ok) {
+      throw new Error(res.error || '処理に失敗しました');
+    }
+    return String(res.text ?? '');
+  }
+
+  if (typeof res === 'string') {
+    return res;
+  }
+
+  return JSON.stringify(res, null, 2);
+};
+
 const handleFile = async (filePath) => {
   if (!filePath) {
     return;
@@ -24,7 +39,8 @@ const handleFile = async (filePath) => {
   setStatus('読み込み中...', 'info');
 
   try {
-    const text = await window.api.parseExcel(filePath);
+    const res = await window.api.parseExcel(filePath);
+    const text = resolveResult(res);
     renderOutput(text);
     setStatus('抽出完了。コピーできます。', 'success');
   } catch (error) {
