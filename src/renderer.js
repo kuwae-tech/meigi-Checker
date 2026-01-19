@@ -5,13 +5,15 @@ const output = document.getElementById('output');
 const copyButton = document.getElementById('copy-button');
 const resetButton = document.getElementById('resetBtn');
 const statusMessage = document.getElementById('status-message');
+const statusText = statusMessage.querySelector('.status-text');
 
 const initialStatusMessage = 'ファイルを読み込むと結果が表示されます。';
 let lastResult = null;
 
-const setStatus = (message, type = 'info') => {
-  statusMessage.textContent = message;
+const setStatus = (message, type = 'info', isLoading = false) => {
+  statusText.textContent = message;
   statusMessage.dataset.type = type;
+  statusMessage.classList.toggle('is-loading', isLoading);
 };
 
 const renderOutput = (text) => {
@@ -41,7 +43,7 @@ const handleFile = async (filePath) => {
   }
 
   fileName.textContent = filePath;
-  setStatus('読み込み中...', 'info');
+  setStatus('読み込み中...', 'info', true);
 
   try {
     const res = await window.api.parseExcel(filePath);

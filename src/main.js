@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
 const path = require("path");
 const XLSX = require("xlsx");
 
@@ -251,6 +251,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 900,
     height: 700,
+    minWidth: 900,
+    minHeight: 700,
     title: "名義SPOT進捗チェッカー",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -263,6 +265,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   createWindow();
 
   ipcMain.handle("select-file", async () => {
