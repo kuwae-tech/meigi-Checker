@@ -10,22 +10,25 @@
 <body>
   <main class="app">
     <header class="header">
-      <span class="header-tag">名義SPOT進捗チェッカー</span>
+      <span class="header-tag">MEIGI SPOT CHECKER</span>
       <h1>名義SPOT進捗チェッカー</h1>
-      <p>Excel をドラッグ＆ドロップして「未制作」「制作中」「確認中」だけを抽出します。</p>
+      <p>Excel をドロップして「未制作 / 制作中 / 確認中」を抽出します。</p>
     </header>
 
     <section class="panel">
       <div id="drop-zone" class="drop-zone">
-        <div>
-          <p class="drop-title">ここに Excel ファイルをドロップ</p>
-          <p class="drop-subtitle">またはボタンから選択してください</p>
+        <div class="drop-copy">
+          <p class="drop-title">Excel をここにドロップ</p>
+          <p class="drop-subtitle">またはファイルを選択</p>
         </div>
-        <button id="select-file" type="button" class="primary-button">ファイルを選択</button>
+        <button id="select-file" type="button" class="ghost-button">ファイルを選択</button>
       </div>
       <div class="meta-row">
         <p id="file-name" class="file-name">未選択</p>
-        <p id="status-message" class="status-message" data-type="info">ファイルを読み込むと結果が表示されます。</p>
+        <p id="status-message" class="status-message" data-type="info">
+          <span class="status-spinner" aria-hidden="true"></span>
+          <span class="status-text">ファイルを読み込むと結果が表示されます。</span>
+        </p>
       </div>
     </section>
 
@@ -33,8 +36,8 @@
       <div class="output-header">
         <h2>出力結果</h2>
         <div class="output-actions">
+          <button id="copy-button" type="button" class="primary-button" disabled>コピー</button>
           <button id="resetBtn" type="button" class="secondary-button">リセット</button>
-          <button id="copy-button" type="button" class="ghost-button" disabled>コピー</button>
         </div>
       </div>
       <div class="output-box">
