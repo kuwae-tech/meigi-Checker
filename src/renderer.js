@@ -3,7 +3,11 @@ const selectButton = document.getElementById('select-file');
 const fileName = document.getElementById('file-name');
 const output = document.getElementById('output');
 const copyButton = document.getElementById('copy-button');
+const resetButton = document.getElementById('resetBtn');
 const statusMessage = document.getElementById('status-message');
+
+const initialStatusMessage = 'ファイルを読み込むと結果が表示されます。';
+let lastResult = null;
 
 const setStatus = (message, type = 'info') => {
   statusMessage.textContent = message;
@@ -13,6 +17,7 @@ const setStatus = (message, type = 'info') => {
 const renderOutput = (text) => {
   output.value = text;
   copyButton.disabled = !text;
+  lastResult = text || null;
 };
 
 const resolveResult = (res) => {
@@ -47,6 +52,15 @@ const handleFile = async (filePath) => {
     renderOutput('');
     setStatus(error.message || '読み込みに失敗しました。', 'error');
   }
+};
+
+const resetUI = () => {
+  fileName.textContent = '未選択';
+  renderOutput('');
+  setStatus(initialStatusMessage, 'info');
+  copyButton.disabled = true;
+  dropZone.classList.remove('is-dragging');
+  lastResult = null;
 };
 
 const handleDrop = (event) => {
@@ -89,4 +103,12 @@ copyButton.addEventListener('click', async () => {
   } catch (error) {
     setStatus('コピーに失敗しました。', 'error');
   }
+});
+
+resetButton.addEventListener('click', () => {
+  const ok = window.confirm('読み込み内容と結果をリセットします。よろしいですか？');
+  if (!ok) {
+    return;
+  }
+  resetUI();
 });
