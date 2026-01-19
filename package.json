@@ -1,0 +1,35 @@
+{
+  "name": "excel-status-summarizer",
+  "version": "1.0.0",
+  "description": "Excel Status Summarizer for Mac",
+  "main": "src/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac --publish=never"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^28.2.4",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.kuwae.excel-status-summarizer",
+    "productName": "Excel Status Summarizer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    }
+  }
+}
