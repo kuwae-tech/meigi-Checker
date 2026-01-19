@@ -1,0 +1,36 @@
+name: build-win-exe
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Pillow
+        run: python -m pip install --upgrade pip pillow
+      - name: Generate icon assets
+        run: python tools/generate_icon.py
+      - name: Install deps
+        run: npm ci
+      - name: Build exe
+        run: npm run dist:win
+      - name: Upload win artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-exe
+          path: dist/*.exe
+          if-no-files-found: error
