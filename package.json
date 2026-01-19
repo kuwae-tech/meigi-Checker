@@ -1,0 +1,38 @@
+{
+  "name": "excel-status-summarizer-mac",
+  "version": "1.0.0",
+  "description": "Drag & drop an Excel file and summarize 未制作/確認中 rows.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac --publish never"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.kuwae.excelStatusSummarizer",
+    "productName": "Excel Status Summarizer",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "package-lock.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ]
+    }
+  }
+}
