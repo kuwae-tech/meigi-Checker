@@ -111,7 +111,8 @@ body {
 }
 
 .primary-button,
-.ghost-button {
+.ghost-button,
+.secondary-button {
   padding: 9px 22px;
   border-radius: var(--radius-pill);
   border: none;
@@ -148,6 +149,22 @@ body {
   color: #8b9591;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.secondary-button {
+  background: transparent;
+  color: #5b6a63;
+  border: 1px solid var(--neutral-300);
+  box-shadow: none;
+}
+
+.secondary-button:hover {
+  border-color: var(--sage-300);
+  background: #f2f5f2;
+}
+
+.secondary-button:active {
+  transform: translateY(1px);
 }
 
 .meta-row {
@@ -191,6 +208,12 @@ body {
   gap: 12px;
 }
 
+.output-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .output-header h2 {
   margin: 0;
   font-size: 18px;
@@ -230,13 +253,15 @@ textarea {
 textarea:focus-visible,
 .primary-button:focus-visible,
 .ghost-button:focus-visible,
+.secondary-button:focus-visible,
 #select-file:focus-visible {
   outline: 2px solid rgba(111, 150, 135, 0.45);
   outline-offset: 2px;
 }
 
 .primary-button:active,
-.ghost-button:active {
+.ghost-button:active,
+.secondary-button:active {
   transform: translateY(1px);
   box-shadow: none;
 }

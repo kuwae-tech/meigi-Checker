@@ -32,7 +32,10 @@
     <section class="panel panel-output">
       <div class="output-header">
         <h2>出力結果</h2>
-        <button id="copy-button" type="button" class="ghost-button" disabled>コピー</button>
+        <div class="output-actions">
+          <button id="resetBtn" type="button" class="secondary-button">リセット</button>
+          <button id="copy-button" type="button" class="ghost-button" disabled>コピー</button>
+        </div>
       </div>
       <div class="output-box">
         <textarea id="output" readonly placeholder="結果がここに表示されます"></textarea>
