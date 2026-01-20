@@ -5,9 +5,6 @@ OUT_DIR = os.path.join("build")
 PNG_PATH = os.path.join(OUT_DIR, "icon.png")
 ICO_PATH = os.path.join(OUT_DIR, "icon.ico")
 
-def clamp(x, a, b):
-    return a if x < a else b if x > b else x
-
 def rounded_rect_mask(w, h, r):
     m = Image.new("L", (w, h), 0)
     d = ImageDraw.Draw(m)
@@ -25,7 +22,6 @@ def draw_vertical_gradient(img, top_rgb, bottom_rgb):
         d.line([(0, y), (w, y)], fill=(r, g, b))
 
 def bbox_alpha(img_rgba, threshold=5):
-    # bounding box of alpha>threshold
     a = img_rgba.getchannel("A")
     bb = a.point(lambda p: 255 if p > threshold else 0).getbbox()
     return bb
@@ -33,87 +29,81 @@ def bbox_alpha(img_rgba, threshold=5):
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    # Apple-ish palette
-    TOP = (248, 248, 250)             # very light
-    BOTTOM = (236, 238, 242)          # subtle depth
-    PRIMARY = (10, 132, 255, 255)     # #0A84FF
-    SUBTLE = (110, 110, 115, 255)     # #6E6E73
+    TOP = (248, 248, 250)
+    BOTTOM = (236, 238, 242)
+    PRIMARY = (10, 132, 255, 255)
+    SUBTLE = (110, 110, 115, 255)
 
     size = 1024
-
-    # IMPORTANT: transparent canvas (corners must be transparent)
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
 
-    # Create an "inset" rounded-square background to reduce perceived size
-    inset = 56  # creates visible padding -> not "too big"
+    # more padding to avoid "too big" look
+    inset = 88
     side = size - inset * 2
-    r = int(side * 0.22)  # proportional radius
+    r = int(side * 0.22)
 
-    # gradient layer (opaque) then mask into rounded rect area
     grad = Image.new("RGB", (side, side), TOP)
     draw_vertical_gradient(grad, TOP, BOTTOM)
     grad_rgba = grad.convert("RGBA")
 
     mask = rounded_rect_mask(side, side, r)
+
+    # bg = rounded-square only (used for bbox measurement)
     bg = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     bg.paste(grad_rgba, (inset, inset), mask)
 
     img = Image.alpha_composite(img, bg)
     d = ImageDraw.Draw(img)
 
-    # subtle highlight blob (kept inside bg; still no border)
+    # highlight must stay fully inside the rounded-square area
     highlight = Image.new("RGBA", (size, size), (255, 255, 255, 0))
     hd = ImageDraw.Draw(highlight)
-    hd.ellipse([inset - 120, inset - 180, inset + side + 120, inset + int(side * 0.55)],
-               fill=(255, 255, 255, 28))
+    hd.ellipse([inset + 20, inset - 40, inset + side - 20, inset + int(side * 0.55)],
+               fill=(255, 255, 255, 26))
     img = Image.alpha_composite(img, highlight)
     d = ImageDraw.Draw(img)
 
-    # motif geometry (smaller / more whitespace)
+    # motif (small)
     cx = size // 2
-    cy = size // 2 - 70
+    cy = size // 2 - 78
 
-    circle_r = 150
+    circle_r = 145
     d.ellipse([cx - circle_r, cy - circle_r, cx + circle_r, cy + circle_r],
               fill=(255, 255, 255, 180))
 
-    # check mark (thin, Apple-ish)
-    w = 34
-    d.line([(cx - 90, cy - 5), (cx - 25, cy + 70)], fill=PRIMARY, width=w, joint="curve")
-    d.line([(cx - 25, cy + 70), (cx + 115, cy - 65)], fill=PRIMARY, width=w, joint="curve")
+    w = 32
+    d.line([(cx - 88, cy - 6), (cx - 26, cy + 66)], fill=PRIMARY, width=w, joint="curve")
+    d.line([(cx - 26, cy + 66), (cx + 108, cy - 62)], fill=PRIMARY, width=w, joint="curve")
 
-    # progress bar (small, low-contrast track)
-    bar_w = 420
-    bar_h = 40
+    bar_w = 400
+    bar_h = 38
     bx1 = cx - bar_w // 2
-    by1 = size - 290
+    by1 = size - 300
     bx2 = bx1 + bar_w
     by2 = by1 + bar_h
 
-    d.rounded_rectangle([bx1, by1, bx2, by2], radius=20, fill=(255, 255, 255, 190))
+    d.rounded_rectangle([bx1, by1, bx2, by2], radius=19, fill=(255, 255, 255, 190))
     fill_w = int(bar_w * 0.68)
-    d.rounded_rectangle([bx1, by1, bx1 + fill_w, by2], radius=20, fill=PRIMARY)
+    d.rounded_rectangle([bx1, by1, bx1 + fill_w, by2], radius=19, fill=PRIMARY)
 
-    # tiny accent line to reduce "floating" feeling (very subtle)
-    d.line([(bx1, by2 + 18), (bx2, by2 + 18)], fill=(SUBTLE[0], SUBTLE[1], SUBTLE[2], 70), width=3)
+    d.line([(bx1, by2 + 16), (bx2, by2 + 16)], fill=(SUBTLE[0], SUBTLE[1], SUBTLE[2], 60), width=3)
 
-    # --- SAFETY CHECKS (prevents repeating the same mistake) ---
-    # 1) corners must be transparent
+    # SAFETY CHECKS
     corners = [(0,0), (0,size-1), (size-1,0), (size-1,size-1)]
     for x,y in corners:
         if img.getpixel((x,y))[3] != 0:
             raise RuntimeError("Icon corner is not transparent. Must keep corners fully transparent.")
 
-    # 2) visual bbox must be inset enough (not too big)
-    bb = bbox_alpha(img, threshold=5)
+    # measure bbox from bg only (avoid highlight/motif affecting bbox)
+    bb = bbox_alpha(bg, threshold=5)
     if not bb:
-        raise RuntimeError("Icon is fully transparent (unexpected).")
+        raise RuntimeError("Icon background bbox not found.")
     left, top, right, bottom = bb
-    # require at least ~40px padding from edges (prevents oversized look)
-    if left < 40 or top < 40 or (size - right) < 40 or (size - bottom) < 40:
-        raise RuntimeError(f"Icon content too large (bbox={bb}). Must have sufficient padding.")
 
-    # Save PNG/ICO (generated in CI; do not commit)
+    min_pad = 70
+    if left < min_pad or top < min_pad or (size - right) < min_pad or (size - bottom) < min_pad:
+        raise RuntimeError(f"Icon background too large (bbox={bb}). Must have sufficient padding.")
+
     img.save(PNG_PATH)
     ico_sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
     img.save(ICO_PATH, sizes=ico_sizes)
