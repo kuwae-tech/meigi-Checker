@@ -97,6 +97,7 @@ function formatDatesToText(dates) {
 
 function parseExcelToSummary(filePath) {
   const wb = XLSX.readFile(filePath, { cellDates: true });
+  const notices = [];
   const targetSheetName = wb.SheetNames.includes("製作状況") ? "製作状況" : wb.SheetNames[0];
   const ws = wb.Sheets[targetSheetName];
 
@@ -116,17 +117,23 @@ function parseExcelToSummary(filePath) {
   let lastArtist = "";
   let lastCompany = "";
 
+  let zeroStatusCount = 0;
+
   const normalizedRows = rows.map((row) => {
     const statusRaw = normalizeText(row["制作状況"]);
     const artistRaw = normalizeText(row["アーティスト名"]);
     const companyRaw = stripKabushiki(row["申込社"]);
     const kouenRaw = row["公演日"];
 
-    const status = statusRaw || lastStatus;
+    const isZeroStatus = statusRaw === "0";
+    if (isZeroStatus) zeroStatusCount += 1;
+
+    const normalizedStatus = isZeroStatus ? "未制作" : statusRaw;
+    const status = normalizedStatus || lastStatus;
     const artist = artistRaw || lastArtist;
     const company = companyRaw || lastCompany;
 
-    if (statusRaw) lastStatus = statusRaw;
+    if (normalizedStatus) lastStatus = normalizedStatus;
     if (artistRaw) lastArtist = artistRaw;
     if (companyRaw) lastCompany = companyRaw;
 
@@ -239,12 +246,19 @@ function parseExcelToSummary(filePath) {
     sections.push(`＜${st}＞\n${lines.join("\n")}`);
   }
 
-  const warning =
-    targetSheetName !== "製作状況"
-      ? `※注意: 「製作状況」シートが無かったため「${targetSheetName}」を読み取りました。\n\n`
-      : "";
+  if (targetSheetName !== "製作状況") {
+    notices.push(
+      `※注意: 「製作状況」シートが無かったため「${targetSheetName}」を読み取りました。`
+    );
+  }
 
-  return warning + sections.join("\n\n");
+  if (zeroStatusCount > 0) {
+    notices.push(
+      `※注意: 制作状況が「0」の行を「未制作」として扱いました（${zeroStatusCount}件）`
+    );
+  }
+
+  return { text: sections.join("\n\n"), notices };
 }
 
 function createWindow() {
@@ -271,7 +285,7 @@ app.whenReady().then(() => {
   ipcMain.handle("select-file", async () => {
     const res = await dialog.showOpenDialog({
       properties: ["openFile"],
-      filters: [{ name: "Excel", extensions: ["xlsx"] }],
+      filters: [{ name: "Excel", extensions: ["xlsx", "xls"] }],
     });
     if (res.canceled || res.filePaths.length === 0) return null;
     return res.filePaths[0];
@@ -279,8 +293,8 @@ app.whenReady().then(() => {
 
   const parseExcelHandler = async (_evt, filePath) => {
     try {
-      const text = parseExcelToSummary(filePath);
-      return { ok: true, text };
+      const { text, notices } = parseExcelToSummary(filePath);
+      return { ok: true, text, notices };
     } catch (e) {
       return { ok: false, error: String(e && e.message ? e.message : e) };
     }
