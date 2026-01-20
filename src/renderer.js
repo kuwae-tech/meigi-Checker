@@ -6,6 +6,7 @@ const copyButton = document.getElementById('copy-button');
 const resetButton = document.getElementById('resetBtn');
 const statusMessage = document.getElementById('status-message');
 const statusText = statusMessage.querySelector('.status-text');
+const noticesBox = document.getElementById('notices');
 
 const initialStatusMessage = 'ファイルを読み込むと結果が表示されます。';
 let lastResult = null;
@@ -22,19 +23,15 @@ const renderOutput = (text) => {
   lastResult = text || null;
 };
 
-const resolveResult = (res) => {
-  if (res && typeof res === 'object') {
-    if (!res.ok) {
-      throw new Error(res.error || '処理に失敗しました');
-    }
-    return String(res.text ?? '');
+const renderNotices = (notices = []) => {
+  const list = Array.isArray(notices) ? notices.filter(Boolean) : [];
+  if (list.length === 0) {
+    noticesBox.textContent = '';
+    noticesBox.classList.remove('is-visible');
+    return;
   }
-
-  if (typeof res === 'string') {
-    return res;
-  }
-
-  return JSON.stringify(res, null, 2);
+  noticesBox.textContent = list.join('\n');
+  noticesBox.classList.add('is-visible');
 };
 
 const handleFile = async (filePath) => {
@@ -47,11 +44,23 @@ const handleFile = async (filePath) => {
 
   try {
     const res = await window.api.parseExcel(filePath);
-    const text = resolveResult(res);
-    renderOutput(text);
+    if (res && typeof res === 'object') {
+      if (!res.ok) {
+        throw new Error(res.error || '処理に失敗しました');
+      }
+      renderOutput(String(res.text ?? ''));
+      renderNotices(res.notices);
+    } else if (typeof res === 'string') {
+      renderOutput(res);
+      renderNotices([]);
+    } else {
+      renderOutput(JSON.stringify(res, null, 2));
+      renderNotices([]);
+    }
     setStatus('抽出しました。コピーできます。', 'success');
   } catch (error) {
     renderOutput('');
+    renderNotices([]);
     setStatus('読み取れませんでした。ファイルをご確認ください。', 'error');
   }
 };
@@ -59,6 +68,7 @@ const handleFile = async (filePath) => {
 const resetUI = () => {
   fileName.textContent = '未選択';
   renderOutput('');
+  renderNotices([]);
   setStatus(initialStatusMessage, 'info');
   copyButton.disabled = true;
   dropZone.classList.remove('is-dragging');
